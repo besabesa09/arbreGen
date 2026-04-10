@@ -74,69 +74,6 @@ async function init() {
 
 async function loadUsers() {
   const users = await api('/api/users');
-
-  if (!users.length) {
-    usersSection.classList.add('hidden');
-    usersList.innerHTML = '';
-    return;
-  }
-
-  usersSection.classList.remove('hidden');
-  usersList.innerHTML = users
-    .map(
-      (user) => `
-        <div class="user-chip">
-          <button class="user-chip-name" data-username="${escapeHtml(user.username)}">${escapeHtml(user.username)}</button>
-          <button
-            class="user-chip-delete"
-            data-user-id="${user._id}"
-            data-username="${escapeHtml(user.username)}"
-            aria-label="Supprimer ${escapeHtml(user.username)}"
-            title="Supprimer ${escapeHtml(user.username)}"
-          >
-            ×
-          </button>
-        </div>`
-    )
-    .join('');
-
-  usersList.querySelectorAll('[data-username]').forEach((button) => {
-    if (button.dataset.userId) {
-      return;
-    }
-
-    button.addEventListener('click', async () => {
-      loginInput.value = button.dataset.username;
-      await handleLogin();
-    });
-  });
-
-  usersList.querySelectorAll('[data-user-id]').forEach((button) => {
-    button.addEventListener('click', async (event) => {
-      event.stopPropagation();
-
-      const { userId, username } = button.dataset;
-      const confirmed = window.confirm(`Supprimer definitivement l'utilisateur ${username} et tout son arbre ?`);
-      if (!confirmed) {
-        return;
-      }
-
-      try {
-        setSaveState('Suppression utilisateur...');
-        await api(`/api/users/${userId}`, { method: 'DELETE' });
-
-        if (state.currentUser && state.currentUser._id === userId) {
-          logout();
-        }
-
-        await loadUsers();
-        setSaveState('Utilisateur supprime');
-      } catch (error) {
-        setSaveState(error.message);
-        window.alert(error.message);
-      }
-    });
-  });
 }
 
 async function handleLogin() {
