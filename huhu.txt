@@ -1,0 +1,3 @@
+|| 'mongodb://127.0.0.1:27017/arbreGen'
+
+mongodb+srv://rovarazakamanantsoa_db_user:DBgnMrs6jwFQBwzm@arbregen.xde8igi.mongodb.net/arbreGen?retryWrites=true&w=majority

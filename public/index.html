@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArbreGen</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">ArbreGen</p>
+        <h1>Gerez votre arbre genealogique dans votre propre espace.</h1>
+        <p class="hero-copy">
+          Chaque utilisateur dispose de son arbre, peut ajouter, modifier, supprimer des branches
+          et exporter un apercu complet en PDF.
+        </p>
+      </div>
+      <a class="docs-link" href="/api-docs" target="_blank" rel="noreferrer">Voir la documentation Swagger</a>
+    </section>
+
+    <section class="panel" id="login-screen">
+      <div class="login-card">
+        <h2>Connexion</h2>
+        <p>Entrez votre prenom ou pseudo pour retrouver votre arbre.</p>
+        <div class="field-row">
+          <input id="login-input" type="text" placeholder="Votre prenom ou pseudo">
+          <button id="login-button">Acceder</button>
+        </div>
+        <div id="users-section" class="users-section hidden">
+          <p>Espaces existants</p>
+          <div id="users-list" class="users-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="tree-screen">
+      <header class="toolbar">
+        <div>
+          <p class="toolbar-label">Espace actif</p>
+          <h2 id="active-user">Utilisateur</h2>
+        </div>
+        <div class="toolbar-actions">
+          <span class="save-indicator" id="save-indicator">Tout est sauvegarde</span>
+          <button id="export-pdf-button">Exporter PDF</button>
+          <button class="secondary" id="logout-button">Changer d'utilisateur</button>
+        </div>
+      </header>
+
+      <div class="legend">
+        Cliquez sur une personne pour la renommer. Utilisez les actions visibles sur chaque carte pour ajouter, supprimer ou restructurer l'arbre.
+      </div>
+
+      <div class="tree-wrap" id="tree-wrap">
+        <div id="tree-root"></div>
+        <svg id="tree-lines"></svg>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal hidden" id="name-modal">
+    <div class="modal-card">
+      <h3 id="modal-title">Action</h3>
+      <input id="modal-input" type="text" placeholder="Nom">
+      <div class="modal-actions">
+        <button class="secondary" id="modal-cancel">Annuler</button>
+        <button id="modal-confirm">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
