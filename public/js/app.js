@@ -256,9 +256,17 @@ async function mutateTree(path, method, body) {
 }
 
 function drawLines() {
-  const wrapBox = treeWrap.getBoundingClientRect();
-  treeLines.setAttribute('width', treeWrap.scrollWidth);
-  treeLines.setAttribute('height', treeWrap.scrollHeight);
+  drawLinesFor(treeWrap, treeRoot, treeLines);
+}
+
+function drawLinesFor(wrapElement, rootElement, linesElement) {
+  const { width, height } = getTreeContentSize(wrapElement, rootElement);
+  const wrapBox = wrapElement.getBoundingClientRect();
+  linesElement.setAttribute('width', width);
+  linesElement.setAttribute('height', height);
+  linesElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  linesElement.style.width = `${width}px`;
+  linesElement.style.height = `${height}px`;
 
   const lines = [];
   Object.values(state.tree.fams).forEach((family) => {
@@ -266,26 +274,26 @@ function drawLines() {
       return;
     }
 
-    const row = document.getElementById(`row-${family.id}`);
+    const row = rootElement.querySelector(`#row-${family.id}`);
     if (!row) {
       return;
     }
 
     const rowBox = row.getBoundingClientRect();
-    const parentX = rowBox.left + rowBox.width / 2 - wrapBox.left + treeWrap.scrollLeft;
-    const parentY = rowBox.bottom - wrapBox.top + treeWrap.scrollTop;
+    const parentX = rowBox.left + rowBox.width / 2 - wrapBox.left + wrapElement.scrollLeft;
+    const parentY = rowBox.bottom - wrapBox.top + wrapElement.scrollTop;
 
     const childCoords = family.kids
       .map((kidId) => {
-        const childRow = document.getElementById(`row-${kidId}`);
+        const childRow = rootElement.querySelector(`#row-${kidId}`);
         if (!childRow) {
           return null;
         }
 
         const childBox = childRow.getBoundingClientRect();
         return {
-          x: childBox.left + childBox.width / 2 - wrapBox.left + treeWrap.scrollLeft,
-          y: childBox.top - wrapBox.top + treeWrap.scrollTop
+          x: childBox.left + childBox.width / 2 - wrapBox.left + wrapElement.scrollLeft,
+          y: childBox.top - wrapBox.top + wrapElement.scrollTop
         };
       })
       .filter(Boolean);
@@ -305,30 +313,77 @@ function drawLines() {
     });
   });
 
-  treeLines.innerHTML = lines.join('');
+  linesElement.innerHTML = lines.join('');
+}
+
+function getTreeContentSize(wrapElement = treeWrap, rootElement = treeRoot) {
+  const styles = window.getComputedStyle(wrapElement);
+  const paddingX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+  const paddingY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+
+  const width = Math.max(
+    wrapElement.scrollWidth,
+    Math.ceil(rootElement.scrollWidth + paddingX)
+  );
+  const height = Math.max(
+    wrapElement.scrollHeight,
+    Math.ceil(rootElement.scrollHeight + paddingY)
+  );
+
+  return { width, height };
+}
+
+function createExportSurface() {
+  const clone = treeWrap.cloneNode(true);
+  clone.id = 'tree-wrap-export';
+  const cloneRoot = clone.querySelector('#tree-root');
+  const cloneLines = clone.querySelector('#tree-lines');
+
+  clone.style.position = 'fixed';
+  clone.style.left = '-100000px';
+  clone.style.top = '0';
+  clone.style.maxWidth = 'none';
+  clone.style.maxHeight = 'none';
+  clone.style.overflow = 'visible';
+  clone.style.minHeight = '0';
+  clone.style.width = 'max-content';
+  clone.style.height = 'max-content';
+  clone.style.background = '#fffdf8';
+  clone.scrollLeft = 0;
+  clone.scrollTop = 0;
+  document.body.appendChild(clone);
+
+  const { width, height } = getTreeContentSize(clone, cloneRoot);
+  clone.style.width = `${width}px`;
+  clone.style.height = `${height}px`;
+  drawLinesFor(clone, cloneRoot, cloneLines);
+
+  return { clone, width, height };
 }
 
 async function exportPdf() {
   const button = document.getElementById('export-pdf-button');
-  const originalOverflow = treeWrap.style.overflow;
-  const originalHeight = treeWrap.style.height;
 
   button.disabled = true;
   button.textContent = 'Generation...';
-  treeWrap.style.overflow = 'visible';
-  treeWrap.style.height = 'auto';
 
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   drawLines();
 
+  const { clone: exportSurface, width, height } = createExportSurface();
+
   try {
-    const canvas = await window.html2canvas(treeWrap, {
+    const canvas = await window.html2canvas(exportSurface, {
       scale: 2,
       backgroundColor: '#fffdf8',
       useCORS: true,
       logging: false,
-      width: treeWrap.scrollWidth,
-      height: treeWrap.scrollHeight
+      width,
+      height,
+      windowWidth: width,
+      windowHeight: height,
+      scrollX: 0,
+      scrollY: 0
     });
 
     const { jsPDF } = window.jspdf;
@@ -340,19 +395,31 @@ async function exportPdf() {
 
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const ratio = Math.min(pageWidth / (canvas.width / 2), (pageHeight - 16) / (canvas.height / 2));
-    const renderWidth = (canvas.width / 2) * ratio;
-    const renderHeight = (canvas.height / 2) * ratio;
+    const margin = 10;
+    const titleY = 9;
+    const contentStartY = 14;
+    const renderWidth = pageWidth - margin * 2;
+    const renderHeight = (canvas.height * renderWidth) / canvas.width;
+    const firstPageAvailableHeight = pageHeight - contentStartY - margin;
+    const otherPagesAvailableHeight = pageHeight - margin * 2;
+    const imageData = canvas.toDataURL('image/png');
 
-    pdf.text(`Arbre genealogique - ${state.currentUser.username}`, pageWidth / 2, 9, { align: 'center' });
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', (pageWidth - renderWidth) / 2, 14, renderWidth, renderHeight);
+    pdf.text(`Arbre genealogique - ${state.currentUser.username}`, pageWidth / 2, titleY, { align: 'center' });
+    pdf.addImage(imageData, 'PNG', margin, contentStartY, renderWidth, renderHeight);
+
+    let consumedHeight = firstPageAvailableHeight;
+    while (consumedHeight < renderHeight) {
+      pdf.addPage();
+      pdf.addImage(imageData, 'PNG', margin, margin - consumedHeight, renderWidth, renderHeight);
+      consumedHeight += otherPagesAvailableHeight;
+    }
+
     pdf.save(`arbre_${state.currentUser.username.replace(/\s+/g, '_')}.pdf`);
     setSaveState('PDF exporte');
   } catch (error) {
     window.alert("Erreur lors de l'export PDF.");
   } finally {
-    treeWrap.style.overflow = originalOverflow;
-    treeWrap.style.height = originalHeight;
+    exportSurface.remove();
     drawLines();
     button.disabled = false;
     button.textContent = 'Exporter PDF';

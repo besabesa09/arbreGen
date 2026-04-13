@@ -233,12 +233,18 @@ input {
   min-height: 560px;
   position: relative;
   padding: 2rem;
+  width: 100%;
+  max-width: 100%;
 }
 
 #tree-root {
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   padding: 0 2rem 2rem;
+  min-width: 100%;
+  width: max-content;
+  position: relative;
+  z-index: 1;
 }
 
 #tree-lines {
@@ -246,6 +252,7 @@ input {
   top: 0;
   left: 0;
   pointer-events: none;
+  overflow: visible;
 }
 
 .family {
@@ -314,6 +321,8 @@ input {
   display: flex;
   gap: 1.4rem;
   padding-top: 3.6rem;
+  width: max-content;
+  align-items: flex-start;
 }
 
 .link-rings {
@@ -340,6 +349,11 @@ input {
 
 .family-actions small {
   color: var(--text-soft);
+}
+
+#tree-wrap-export .person-actions,
+#tree-wrap-export .family-actions {
+  display: none !important;
 }
 
 .modal {
@@ -389,6 +403,7 @@ input {
   #tree-root {
     justify-content: flex-start;
     padding: 0 0 2rem;
+    min-width: max-content;
   }
 
   .person-card {
